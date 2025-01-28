@@ -1,0 +1,12 @@
+$> curl -v http://localhost:8080/sagas -d '{"target":"a", "target_id":"1"}' -H "Content-Type: application/json"
+400
+
+$> curl -v http://localhost:8080/sagas -d '{"target":"a", "target_id":"1", "target_ref":["b", "c"]}' -H "Content-Type: application/json"
+201
+
+$> curl -v http://localhost:8080/sagas -d '{"target":"a", "target_id":"1", "target_ref":["b", "c"]}'
+400
+
+
+$> curl -v http://localhost:8080/sagas
+200
