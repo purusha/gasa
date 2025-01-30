@@ -1,6 +1,6 @@
 use crate::repository::Repository;
 use std::sync::Mutex;
-use actix_web::{web, App, HttpServer};
+use actix_web::{web, App, HttpServer, middleware::Logger};
 
 mod response;
 mod saga;
@@ -17,6 +17,7 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
+            .wrap(Logger::default())
             .app_data(repo.clone()) //non clona il contenuto, ma solo il riferimento ... che è thread-safe
             .service(saga::list)
             .service(saga::create)

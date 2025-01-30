@@ -50,6 +50,16 @@ impl Metrics {
         println!("Total Duration: {:.2} seconds", duration);
         println!("Average Response Time: {:.2} ms", avg_response_time);
         println!("Throughput: {:.2} requests/second", successful_requests as f64 / duration);
+
+        /*
+            Richieste totali: numero di richieste inviate.
+            Richieste di successo: conteggio di risposte con codice HTTP 2xx.
+            Richieste fallite: conteggio di errori o codici HTTP non 2xx.
+            Tempo medio di risposta: calcolato sommando i tempi delle risposte riuscite.
+            Throughput: richieste per secondo.
+            Output: Al termine del test, stampa un riepilogo con tutte le metriche.
+         */
+
     }
 }
 
@@ -74,15 +84,15 @@ async fn main() {
     for _ in 0..parallelism {
         let metrics = Arc::clone(&metrics);
         let client = Arc::clone(&client);
-        let b = Arc::clone(&barrier);
+        let barrier = Arc::clone(&barrier);
         let url = url.to_string();
 
         let task = task::spawn(async move {
-            b.wait().await; // Synchronize tasks
+            barrier.wait().await; // Synchronize tasks
 
             for _ in 0..(total_requests / parallelism) {
                 let start = Instant::now();
-                
+
                 match client.get(&url).send().await {
                     Ok(response) => {
                         let elapsed = start.elapsed().as_millis() as u64;
@@ -112,3 +122,10 @@ async fn main() {
     let metrics = metrics.lock().unwrap();
     metrics.print_summary(total_duration);
 }
+
+/*
+5. Miglioramenti futuri
+Aggiungere metriche di latenza percentilizzate (p90, p99).
+Scrivere i risultati in un file CSV per ulteriori analisi.
+Integrare con librerie di monitoraggio come prometheus per visualizzazioni grafiche.
+*/
