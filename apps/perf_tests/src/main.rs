@@ -59,13 +59,18 @@ async fn main() {
     let total_requests = 100;
     let parallelism = 10;
 
-    let metrics = Arc::new(Mutex::new(Metrics::new(parallelism))); // Use Arc + Mutex for thread safety
-    let client = Arc::new(Client::new()); // Use Arc to share safely
+    // Use Arc + Mutex for thread safety
+    let metrics = Arc::new(Mutex::new(Metrics::new(parallelism))); 
+
+    // Use Arc to share safely
+    let client = Arc::new(Client::new()); 
+
+    // Use Arc to share safely
     let barrier = Arc::new(Barrier::new(parallelism));
 
     let start_time = Instant::now();
-
     let mut tasks = Vec::new();
+
     for _ in 0..parallelism {
         let metrics = Arc::clone(&metrics);
         let client = Arc::clone(&client);
@@ -74,8 +79,10 @@ async fn main() {
 
         let task = task::spawn(async move {
             b.wait().await; // Synchronize tasks
+
             for _ in 0..(total_requests / parallelism) {
                 let start = Instant::now();
+                
                 match client.get(&url).send().await {
                     Ok(response) => {
                         let elapsed = start.elapsed().as_millis() as u64;
