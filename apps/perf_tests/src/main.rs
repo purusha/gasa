@@ -1,10 +1,32 @@
 use reqwest::Client;
+use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
 use tokio::sync::Barrier;
 use tokio::task;
-//use chrono::Utc;
 use std::sync::{Arc, Mutex};
+
+mod randomizer;
+use crate::randomizer::*;
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct SagaRequest {
+    pub target: String,
+    pub target_id: String,
+    pub target_ref: Vec<String>,    
+//    pub timeout: Option<String>,
+//    pub in_order: Option<bool>,
+}
+
+impl SagaRequest {
+    pub fn random() -> SagaRequest {
+        SagaRequest { 
+            target: generate_random_string(10), 
+            target_id: random_u64().to_string(), 
+            target_ref: vec![ generate_random_string(10),  generate_random_string(10),  generate_random_string(10)] 
+        }
+    }
+}
 
 struct Metrics {
     total_requests: usize,
@@ -57,7 +79,6 @@ impl Metrics {
             Richieste fallite: conteggio di errori o codici HTTP non 2xx.
             Tempo medio di risposta: calcolato sommando i tempi delle risposte riuscite.
             Throughput: richieste per secondo.
-            Output: Al termine del test, stampa un riepilogo con tutte le metriche.
          */
 
     }
@@ -74,6 +95,13 @@ async fn main() {
 
     // Use Arc to share safely
     let client = Arc::new(Client::new()); 
+
+    // Setup: load some data to increase body response
+    for _ in 0..parallelism {
+        let body = SagaRequest::random();
+
+        client.post(url).json(& body).send().await.unwrap();
+    }
 
     // Use Arc to share safely
     let barrier = Arc::new(Barrier::new(parallelism));
@@ -124,8 +152,9 @@ async fn main() {
 }
 
 /*
-5. Miglioramenti futuri
-Aggiungere metriche di latenza percentilizzate (p90, p99).
-Scrivere i risultati in un file CSV per ulteriori analisi.
-Integrare con librerie di monitoraggio come prometheus per visualizzazioni grafiche.
+    Miglioramenti futuri
+
+    Aggiungere metriche di latenza percentilizzate (p90, p99).
+    Scrivere i risultati in un file CSV per ulteriori analisi.
+    Integrare con librerie di monitoraggio come prometheus per visualizzazioni grafiche.
 */
