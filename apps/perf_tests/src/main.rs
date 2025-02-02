@@ -1,5 +1,5 @@
 use reqwest::Client;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
 use tokio::sync::Barrier;
@@ -9,13 +9,11 @@ use std::sync::{Arc, Mutex};
 mod randomizer;
 use crate::randomizer::*;
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Serialize)]
 pub struct SagaRequest {
     pub target: String,
     pub target_id: String,
     pub target_ref: Vec<String>,    
-//    pub timeout: Option<String>,
-//    pub in_order: Option<bool>,
 }
 
 impl SagaRequest {
