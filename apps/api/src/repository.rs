@@ -1,4 +1,4 @@
-use crate::saga;
+use crate::saga::{self, Saga, SagaResponse};
 
 use dashmap::DashMap;
 use saga::SagaRequest;
@@ -23,10 +23,15 @@ impl Repository {
         key
     }
 
-    pub fn extract(&self) -> Vec<(Uuid, SagaRequest)> {
+    pub fn extract(&self) -> Vec<SagaResponse> {
         self.data
             .iter()
-            .map(|entry| (entry.key().clone(), entry.value().clone()))
+            .map(|entry| {
+                SagaResponse {
+                    saga: Saga {id: entry.key().clone()},
+                    config: entry.value().clone()
+                }
+            })
             .collect()
     }
     

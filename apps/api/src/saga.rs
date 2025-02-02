@@ -30,44 +30,35 @@ pub type SagaResponses = Response<SagaResponse>;
 
 pub const APPLICATION_JSON: &str = "application/json";
 
-/// list 50 last tweets `/tweets`
 #[get("/sagas")]
 pub async fn list(repo_d: Data<Mutex<Repository>>) -> HttpResponse {
     //riferimento condiviso al singleton
     let repo = repo_d.clone();
 
-    let extract = repo.lock().unwrap().extract();
+    let r = web::block({
+        move || {
+            SagaResponses {
+                results: repo.lock().unwrap().extract()
+            }        
+        }
+    }).await;
 
-    let responses = SagaResponses {
-        results: extract.iter()
-            .map(|t| {
-                SagaResponse {
-                    saga: Saga {id: t.0},
-                    config: t.1.clone()
-                }
-            })
-            .collect()
-    };
-
-    HttpResponse::Ok()
-        .content_type(APPLICATION_JSON)
-        .json(responses)
-
+    match r {
+        Ok(rr) => HttpResponse::Ok()
+            .content_type(APPLICATION_JSON)
+            .json(rr),
+        _ => HttpResponse::InternalServerError().await.unwrap(),
+    }
 }
 
 #[post("/sagas")]
 pub async fn create(req: Json<SagaRequest>, repo_d: Data<Mutex<Repository>>) -> HttpResponse {
+    //riferimento condiviso al singleton
+    let repo = repo_d.clone();
+
     let s = web::block({
-
-        //riferimento condiviso al singleton
-        let repo = repo_d.clone();
-
         move || {
-            // accedi al Repository protetto dal Mutex
-            let mut repo = repo.lock().unwrap();
-
-            //no ownership ... ma call with ref (also mutable)
-            inner_create(req.0, &mut repo).unwrap()
+            inner_create(req.0, &mut repo.lock().unwrap()).unwrap()
         }
     }).await;
 
