@@ -9,6 +9,9 @@ use std::sync::{Arc, Mutex};
 mod randomizer;
 use crate::randomizer::*;
 
+/*
+    TODO: use SagaRequest struct define in api project
+ */
 #[derive(Debug, Serialize)]
 pub struct SagaRequest {
     pub target: String,
@@ -17,11 +20,15 @@ pub struct SagaRequest {
 }
 
 impl SagaRequest {
+
+    /* 
+        TODO: when api act validation on request object, random data should not be valid
+    */
     pub fn random() -> SagaRequest {
         SagaRequest { 
             target: generate_random_string(10), 
             target_id: random_u64().to_string(), 
-            target_ref: vec![ generate_random_string(10),  generate_random_string(10),  generate_random_string(10)] 
+            target_ref: vec![ generate_random_string(10), generate_random_string(10), generate_random_string(10) ] 
         }
     }
 }
@@ -94,16 +101,16 @@ async fn main() {
     // Use Arc to share safely
     let client = Arc::new(Client::new()); 
 
+    // Use Arc to share safely
+    let barrier = Arc::new(Barrier::new(parallelism));
+
     // Setup: load some data to increase body response
     for _ in 0..parallelism {
         let body = SagaRequest::random();
 
-        client.post(url).json(& body).send().await.unwrap();
+        client.post(url).json(&body).send().await.unwrap();
     }
-
-    // Use Arc to share safely
-    let barrier = Arc::new(Barrier::new(parallelism));
-
+    
     let start_time = Instant::now();
     let mut tasks = Vec::new();
 
