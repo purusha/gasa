@@ -20,13 +20,6 @@ async fn main() {
 
     // Use Arc to share safely
     let barrier = Arc::new(Barrier::new(parallelism));
-
-    // Setup: load some data to increase body response
-    for _ in 0..parallelism {
-        let body = SagaRequest::random();
-
-        client.post(url).json(&body).send().await.unwrap();
-    }
     
     let start_time = Instant::now();
     let mut tasks = Vec::new();
@@ -42,8 +35,9 @@ async fn main() {
 
             for _ in 0..(total_requests / parallelism) {
                 let start = Instant::now();
+                let body = SagaRequest::random();
 
-                match client.get(&url).send().await {
+                match client.post(&url).json(&body).send().await {
                     Ok(response) => {
                         let elapsed = start.elapsed().as_millis() as u64;
                         let metrics = metrics.lock().unwrap();
@@ -72,11 +66,3 @@ async fn main() {
     let metrics = metrics.lock().unwrap();
     metrics.print_summary(total_duration);
 }
-
-/*
-    Miglioramenti futuri
-
-    Aggiungere metriche di latenza percentilizzate (p90, p99).
-    Scrivere i risultati in un file CSV per ulteriori analisi.
-    Integrare con librerie di monitoraggio come prometheus per visualizzazioni grafiche.
-*/
