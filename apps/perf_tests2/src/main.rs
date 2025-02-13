@@ -1,4 +1,5 @@
 use reqwest::Client;
+use serde_json::Value;
 use std::time::Instant;
 use tokio::sync::Barrier;
 use tokio::task;
@@ -61,6 +62,11 @@ async fn main() {
     for task in tasks {
         task.await.unwrap();
     }
+
+    let response = client.get(url).send().await.unwrap();
+    let json = response.json::<Value>().await.unwrap();
+    let results = &json["results"].as_array();
+    println!("Retrive data count: {}\n", results.unwrap().iter().count());
 
     let total_duration = start_time.elapsed().as_secs_f64();
     let metrics = metrics.lock().unwrap();

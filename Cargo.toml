@@ -1,7 +1,9 @@
 [workspace]
 members = [
     "apps/api",
-    "apps/perf_tests"
+    "apps/perf_tests", 
+    "apps/perf_tests2", 
+    "common_tests"
 ]
 resolver = "2"  # (opzionale, ma consigliato per Rust edition 2021+)
 
