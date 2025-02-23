@@ -1,0 +1,9 @@
+create virtual env for this project
+$> python3 -m venv env
+
+activate it
+$> source env/bin/activate
+
+install dependency
+$> pip3 install pandas matplotlib
+

@@ -69,7 +69,7 @@ impl Metrics {
         let now = Local::now();
     
         // Crea il nome del file nel formato "avvio_GG-MM-AAAA_OO-MM-SS.txt"
-        let filename = format!("bi/gasa-{}.csv", now.format("%d-%m-%Y_%H-%M-%S"));        
+        let filename = format!("bi/data/gasa-{}.csv", now.format("%d-%m-%Y_%H-%M-%S"));        
         let mut wtr = Writer::from_path(filename).unwrap();
 
         let from = NaiveTime::from_hms_opt(00, 00, 00).unwrap();
