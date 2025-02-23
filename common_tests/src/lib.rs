@@ -8,6 +8,8 @@ use crate::randomizer::*;
 
 use chrono::{Duration as ChronoDuration, Local, NaiveTime};
 
+use std::fs;
+use std::path::Path;
 pub struct Metrics {
     successful_requests: Vec<u64>,          // In milliseconds
     failed_requests: Vec<u64>,              // count of 
@@ -68,6 +70,12 @@ impl Metrics {
     }
 
     fn print_csv(&self) {
+        let parent_dir = Path::new("bi/data");
+        if !parent_dir.exists() {
+            fs::create_dir_all(parent_dir).unwrap();
+            println!("Directory creata.");
+        }
+
         let now = Local::now();
         let filename = format!("bi/data/{}-{}.csv", self.app_name, now.format("%d-%m-%Y_%H-%M-%S"));        
         let mut wtr = Writer::from_path(filename).unwrap();
@@ -75,7 +83,7 @@ impl Metrics {
         let from = NaiveTime::from_hms_opt(00, 00, 00).unwrap();        
 
         //intestazione
-        let _ = wtr.write_record(&["timestamp", "response_time", "status"]);
+        wtr.write_record(&["timestamp", "response_time", "status"]).unwrap();
 
         //data
         let mut seconds: i64 = 0;
@@ -85,10 +93,10 @@ impl Metrics {
                 let time = (from + ChronoDuration::seconds(seconds)).format("%H:%M:%S").to_string();
                 let today = now.format("%Y-%m-%d ").to_string();
 
-                let _ = wtr.write_record(&[ today + &time, num.0.to_string(), num.1.to_string() ]);                    
+                wtr.write_record(&[ today + &time, num.0.to_string(), num.1.to_string() ]).unwrap();
             }
                 
-        let _ = wtr.flush();        
+        wtr.flush().unwrap();
     }
 }
 
