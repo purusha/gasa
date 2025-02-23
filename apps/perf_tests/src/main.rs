@@ -13,7 +13,7 @@ async fn main() {
     let parallelism = 10;
 
     // Use Arc + Mutex for thread safety
-    let metrics = Arc::new(Mutex::new(Metrics::new(parallelism))); 
+    let metrics = Arc::new(Mutex::new(Metrics::new())); 
 
     // Use Arc to share safely
     let client = Arc::new(Client::new()); 
@@ -46,16 +46,19 @@ async fn main() {
                 match client.get(&url).send().await {
                     Ok(response) => {
                         let elapsed = start.elapsed().as_millis() as u64;
-                        let metrics = metrics.lock().unwrap();
+                        let mut metrics = metrics.lock().unwrap();
+
                         if response.status().is_success() {
                             metrics.record_success(elapsed);
                         } else {
-                            metrics.record_failure();
+                            metrics.record_failure(elapsed);
                         }
                     }
                     Err(_) => {
-                        let metrics = metrics.lock().unwrap();
-                        metrics.record_failure();
+                        let elapsed = start.elapsed().as_millis() as u64;
+                        let mut metrics = metrics.lock().unwrap();
+                        
+                        metrics.record_failure(elapsed);
                     }
                 }
             }

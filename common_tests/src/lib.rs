@@ -1,53 +1,58 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 mod randomizer;
+use csv::Writer;
 use serde::Serialize;
 
 use crate::randomizer::*;
+
+use chrono::{Duration as ChronoDuration, Local, NaiveTime};
+
 pub struct Metrics {
-    total_requests: usize,
-    successful_requests: AtomicUsize,
-    failed_requests: AtomicUsize,
-    total_response_time: AtomicUsize, // In milliseconds
+    successful_requests: Vec<u64>,          // In milliseconds
+    failed_requests: Vec<u64>,              // count of 
+    total_response_time: AtomicUsize,       // In milliseconds
 }
 
 impl Metrics {
-    pub fn new(total_requests: usize) -> Self {
+    pub fn new() -> Self {
         Metrics {
-            total_requests,
-            successful_requests: AtomicUsize::new(0),
-            failed_requests: AtomicUsize::new(0),
+            successful_requests: vec![],
+            failed_requests: vec![],
             total_response_time: AtomicUsize::new(0),
         }
     }
 
-    pub fn record_success(&self, response_time: u64) {
-        self.successful_requests.fetch_add(1, Ordering::Relaxed);
+    pub fn record_success(&mut self, response_time: u64) {
+        self.successful_requests.push(response_time);
         self.total_response_time.fetch_add(response_time as usize, Ordering::Relaxed);
     }
 
-    pub fn record_failure(&self) {
-        self.failed_requests.fetch_add(1, Ordering::Relaxed);
+    pub fn record_failure(&mut self, response_time: u64) {
+        self.failed_requests.push(response_time);
     }
 
     pub fn print_summary(&self, duration: f64) {
-        let successful_requests = self.successful_requests.load(Ordering::Relaxed);
-        let failed_requests = self.failed_requests.load(Ordering::Relaxed);
-        let total_response_time = self.total_response_time.load(Ordering::Relaxed);
+        let successful = self.successful_requests.iter().count();
+        let failed = self.failed_requests.iter().count();
+        let total_time = self.total_response_time.load(Ordering::Relaxed);
 
-        let avg_response_time = if successful_requests > 0 {
-            total_response_time as f64 / successful_requests as f64
+        let avg_response_time = if successful > 0 {
+            total_time as f64 / successful as f64
         } else {
             0.0
         };
 
         println!("Summary of Load Test:");
-        println!("Total Requests: {}", self.total_requests);
-        println!("Successful Requests: {}", successful_requests);
-        println!("Failed Requests: {}", failed_requests);
+        println!("-------------------------------------");
+        println!("Total Requests: {}", successful + failed);
+        println!("Successful Requests: {}", successful);
+        println!("Failed Requests: {}", failed);
         println!("Total Duration: {:.2} seconds", duration);
         println!("Average Response Time: {:.2} ms", avg_response_time);
-        println!("Throughput: {:.2} requests/second", successful_requests as f64 / duration);
+        println!("Throughput: {:.2} requests/second", successful as f64 / duration);
+        println!("-------------------------------------");
+        println!("Response times (ms): {:?} and {:?}", self.successful_requests, self.failed_requests); 
 
         /*
             Richieste totali: numero di richieste inviate.
@@ -55,8 +60,43 @@ impl Metrics {
             Richieste fallite: conteggio di errori o codici HTTP non 2xx.
             Tempo medio di risposta: calcolato sommando i tempi delle risposte riuscite.
             Throughput: richieste per secondo.
-         */
+        */
 
+        self.print_csv();
+    }
+
+    fn print_csv(&self) {
+        let now = Local::now();
+    
+        // Crea il nome del file nel formato "avvio_GG-MM-AAAA_OO-MM-SS.txt"
+        let filename = format!("bi/gasa-{}.csv", now.format("%d-%m-%Y_%H-%M-%S"));        
+        let mut wtr = Writer::from_path(filename).unwrap();
+
+        let from = NaiveTime::from_hms_opt(00, 00, 00).unwrap();
+        let mut looop: i64 = 0;
+
+        //intestazione
+        let _ = wtr.write_record(&["timestamp", "response_time", "status"]);
+
+        //200
+        for i in &self.successful_requests {
+            looop += 1;
+            let current_time = from + ChronoDuration::seconds(looop);
+            let _ = wtr.write_record(
+                &[ String::from("2025-02-22 ") + &current_time.format("%H:%M:%S").to_string(), i.to_string(), String::from("200") ]
+            );
+        }
+
+        //500
+        for i in &self.failed_requests {
+            looop += 1;
+            let current_time = from + ChronoDuration::seconds(looop);
+            let _ = wtr.write_record(
+                &[ String::from("2025-02-22 ") + &current_time.format("%H:%M:%S").to_string(), i.to_string(), String::from("500") ]
+            );
+        }
+                
+        let _ = wtr.flush();        
     }
 }
 
