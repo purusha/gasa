@@ -12,14 +12,16 @@ pub struct Metrics {
     successful_requests: Vec<u64>,          // In milliseconds
     failed_requests: Vec<u64>,              // count of 
     total_response_time: AtomicUsize,       // In milliseconds
+    app_name: String
 }
 
 impl Metrics {
-    pub fn new() -> Self {
+    pub fn new(app_name: String) -> Self {
         Metrics {
             successful_requests: vec![],
             failed_requests: vec![],
             total_response_time: AtomicUsize::new(0),
+            app_name
         }
     }
 
@@ -67,34 +69,24 @@ impl Metrics {
 
     fn print_csv(&self) {
         let now = Local::now();
-    
-        // Crea il nome del file nel formato "avvio_GG-MM-AAAA_OO-MM-SS.txt"
-        let filename = format!("bi/data/gasa-{}.csv", now.format("%d-%m-%Y_%H-%M-%S"));        
+        let filename = format!("bi/data/{}-{}.csv", self.app_name, now.format("%d-%m-%Y_%H-%M-%S"));        
         let mut wtr = Writer::from_path(filename).unwrap();
 
-        let from = NaiveTime::from_hms_opt(00, 00, 00).unwrap();
-        let mut looop: i64 = 0;
+        let from = NaiveTime::from_hms_opt(00, 00, 00).unwrap();        
 
         //intestazione
         let _ = wtr.write_record(&["timestamp", "response_time", "status"]);
 
-        //200
-        for i in &self.successful_requests {
-            looop += 1;
-            let current_time = from + ChronoDuration::seconds(looop);
-            let _ = wtr.write_record(
-                &[ String::from("2025-02-22 ") + &current_time.format("%H:%M:%S").to_string(), i.to_string(), String::from("200") ]
-            );
-        }
+        //data
+        let mut seconds: i64 = 0;
+        for num in self.successful_requests.iter().map(|x| (x, 200))
+            .chain(self.failed_requests.iter().map(|x| (x, 500))) {
+                seconds += 1;
+                let time = (from + ChronoDuration::seconds(seconds)).format("%H:%M:%S").to_string();
+                let today = now.format("%Y-%m-%d ").to_string();
 
-        //500
-        for i in &self.failed_requests {
-            looop += 1;
-            let current_time = from + ChronoDuration::seconds(looop);
-            let _ = wtr.write_record(
-                &[ String::from("2025-02-22 ") + &current_time.format("%H:%M:%S").to_string(), i.to_string(), String::from("500") ]
-            );
-        }
+                let _ = wtr.write_record(&[ today + &time, num.0.to_string(), num.1.to_string() ]);                    
+            }
                 
         let _ = wtr.flush();        
     }

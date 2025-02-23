@@ -14,7 +14,7 @@ async fn main() {
     let parallelism = 10;
 
     // Use Arc + Mutex for thread safety
-    let metrics = Arc::new(Mutex::new(Metrics::new())); 
+    let metrics = Arc::new(Mutex::new(Metrics::new(String::from("perf_test2")))); 
 
     // Use Arc to share safely
     let client = Arc::new(Client::new()); 
