@@ -34,6 +34,7 @@ impl Metrics {
 
     pub fn record_failure(&mut self, response_time: u64) {
         self.failed_requests.push(response_time);
+        self.total_response_time.fetch_add(response_time as usize, Ordering::Relaxed);
     }
 
     pub fn print_summary(&self, duration: f64) {
